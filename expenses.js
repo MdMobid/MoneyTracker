@@ -363,7 +363,7 @@
     const isEdit = (editingId !== null);
 
     row.innerHTML = `
-      <input class="modal__input row-desc" type="text" placeholder="Description (e.g., Coffee)" value="${escHtml(desc)}" required>
+      <input class="modal__input row-desc" type="text" placeholder="Description" value="${escHtml(desc)}" required>
       <input class="modal__input row-amount" type="number" placeholder="0.00" min="0" step="0.01" value="${amount}" required>
       ${isEdit ? '<div style="width:32px"></div>' : `<button type="button" class="btn-remove-row" onclick="window.__removeModalRow('${rowId}')">✕</button>`}
     `;
