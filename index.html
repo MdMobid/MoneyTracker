@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Money Tracker</title>
+  <link rel="stylesheet" href="shared.css">
+  <link rel="stylesheet" href="expenses.css">
+  <link rel="icon" type="image/png" href="icon-192.png">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#0f172a">
+  <link rel="apple-touch-icon" href="icon-192.png">
+</head>
+
+<body>
+  <div class="app">
+
+    <nav class="topnav">
+      <a href="index.html" class="topnav__brand">
+        <img src="icon-192.png" alt="Money Tracker logo" class="topnav__logo-img">
+        <div>
+          <div class="topnav__name">Money Tracker</div>
+        </div>
+      </a>
+      <div style="display: flex; gap: 10px; align-items: center;">
+        <button class="btn-settings" id="btnSettings" title="Sync Settings">⚙️</button>
+        <button class="btn-primary" id="btnAddExp"
+          style="background:var(--grad-money);box-shadow:0 4px 18px var(--green-dim);">
+          <span style="font-size:1.1rem;font-weight:300">＋</span><span class="btn-text"> Add</span>
+        </button>
+      </div>
+    </nav>
+
+    <!-- BOTTOM NAV -->
+    <nav class="bottom-nav" id="tabSwitcher">
+      <button class="bottom-nav__item active" data-tab="expenses">
+        <span class="bottom-nav__icon">💳</span>
+        <span class="bottom-nav__label">Expenses</span>
+      </button>
+      <button class="bottom-nav__item" data-tab="insights">
+        <span class="bottom-nav__icon">📊</span>
+        <span class="bottom-nav__label">Insights</span>
+      </button>
+    </nav>
+
+    <!-- ═══════════ EXPENSES TAB ═══════════ -->
+    <div class="tab-content active" id="tab-expenses">
+      <!-- MONTH NAV -->
+      <div class="month-nav-bar">
+        <button class="month-btn" id="prevMonth">◀</button>
+        <span class="month-label" id="monthLabel"></span>
+        <button class="month-btn" id="nextMonth">▶</button>
+      </div>
+
+      <div class="exp-filters">
+        <div style="display: flex; gap: 10px; align-items: center; width: 100%; flex-wrap: wrap;">
+          <div class="search-wrap" style="flex: 1; min-width: 140px; margin: 0;">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="searchExp" class="search-input" placeholder="Search expenses…">
+          </div>
+        </div>
+      </div>
+
+      <div id="expList"></div>
+    </div>
+
+    <!-- ═══════════ INSIGHTS TAB ═══════════ -->
+    <div class="tab-content" id="tab-insights">
+      <!-- MONTH NAV (mirrored) -->
+      <div class="month-nav-bar">
+        <button class="month-btn" id="prevMonthInsight">◀</button>
+        <span class="month-label" id="monthLabelInsight"></span>
+        <button class="month-btn" id="nextMonthInsight">▶</button>
+      </div>
+
+      <!-- SUMMARY CARDS -->
+      <section class="exp-stats" id="expStats">
+        <div class="estat estat--spent">
+          <div class="estat__icon">💸</div>
+          <div>
+            <div class="estat__value" id="statSpent">₹0</div>
+            <div class="estat__label">Total Spent</div>
+          </div>
+          <div class="estat__glow"></div>
+        </div>
+        <div class="estat estat--today">
+          <div class="estat__icon">📅</div>
+          <div>
+            <div class="estat__value" id="statToday">₹0</div>
+            <div class="estat__label" id="statTodayLabel">Today</div>
+          </div>
+          <div class="estat__glow"></div>
+        </div>
+        <div class="estat estat--avg">
+          <div class="estat__icon">📊</div>
+          <div>
+            <div class="estat__value" id="statAvg">₹0</div>
+            <div class="estat__label">Daily Avg</div>
+          </div>
+          <div class="estat__glow"></div>
+        </div>
+        <div class="estat estat--count">
+          <div class="estat__icon">🧾</div>
+          <div>
+            <div class="estat__value" id="statCount">0</div>
+            <div class="estat__label">Transactions</div>
+          </div>
+          <div class="estat__glow"></div>
+        </div>
+      </section>
+
+      <!-- LINE CHART -->
+      <div class="exp-card" id="barCard">
+        <div class="exp-card__title">Daily Spending</div>
+        <div class="line-chart-wrap" id="lineChartWrap">
+          <svg id="lineChartSvg" class="line-chart-svg"></svg>
+          <div class="line-chart-labels" id="lineChartLabels"></div>
+          <div class="line-tooltip" id="lineTooltip"></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- TOAST CONTAINER -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- EXPENSE ADD/EDIT MODAL -->
+  <div class="modal-overlay" id="expModal">
+    <div class="modal">
+      <button class="modal__close" id="modalClose">✕</button>
+      <h2 class="modal__title" id="expModalTitle">Add Expense</h2>
+
+      <div class="modal-form">
+        <div class="modal__field" style="margin-bottom: 16px;">
+          <label class="modal__label">Date</label>
+          <input class="modal__input" type="date" id="expDate">
+        </div>
+
+        <div class="modal-items-label">Expenses</div>
+        <div class="modal-items-list" id="expModalList">
+          <!-- Dynamically populated rows will go here -->
+        </div>
+
+        <button type="button" class="btn-add-row" id="btnAddRow">＋ Add Item</button>
+      </div>
+
+      <div class="modal__actions">
+        <button class="modal__btn modal__btn--cancel" id="expCancel">Cancel</button>
+        <button class="modal__btn modal__btn--primary" id="expSave" style="background:var(--grad-money);">Save</button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- SYNC SETTINGS MODAL -->
+  <div class="modal-overlay" id="settingsModal">
+    <div class="modal">
+      <button class="modal__close" id="settingsClose">✕</button>
+      <h2 class="modal__title">Sync Settings</h2>
+      <p style="color:var(--t2);font-size:0.9rem;margin-bottom:16px;">Connect Firebase Realtime DB to sync across
+        devices.</p>
+      <div class="modal__field">
+        <label class="modal__label">Firebase DB URL</label>
+        <input class="modal__input" type="text" id="dbUrl" placeholder="https://your-project.firebaseio.com">
+      </div>
+      <div class="modal__field">
+        <label class="modal__label">Database Secret / Auth (Optional)</label>
+        <input class="modal__input" type="password" id="dbKey" placeholder="Your DB Auth Token">
+      </div>
+
+      <hr style="border:none;border-top:1px solid rgba(255,255,255,0.1);margin:20px 0;">
+
+      <div class="settings-dropdown" id="importExportDropdown">
+        <button class="settings-dropdown__trigger" onclick="toggleSettingsDropdown('importExportDropdown')">
+          <span class="settings-dropdown__label">Import / Export Data</span>
+          <span class="settings-dropdown__arrow">▶</span>
+        </button>
+        <div class="settings-dropdown__content">
+          <div class="import-export-buttons">
+            <button class="import-export-btn import-export-btn--import" id="btnImportData">
+              <span class="import-export-btn__icon">📥</span>
+              <span class="import-export-btn__text">Import</span>
+            </button>
+            <button class="import-export-btn import-export-btn--export" id="btnExportData">
+              <span class="import-export-btn__icon">📤</span>
+              <span class="import-export-btn__text">Export</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal__actions">
+        <button class="modal__btn modal__btn--cancel" id="btnDisconnectDb"
+          style="color:rgba(248, 113, 113, 0.8);border-color:rgba(248, 113, 113, 0.3);">Disconnect</button>
+        <button class="modal__btn modal__btn--primary" id="btnSaveDb" style="background:var(--grad-primary);">Save &
+          Sync</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="db.js"></script>
+  <script>
+    window.swReg = null;
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js').then(reg => {
+        window.swReg = reg;
+      }).catch(err => console.error(err));
+    }
+
+    // ── Settings modal ─────────────────────────────────────
+    (() => {
+      const btnSettings = document.getElementById('btnSettings');
+      const settingsModal = document.getElementById('settingsModal');
+
+      window.showToast = (message, type = 'info', duration = 3000) => {
+        const container = document.getElementById('toastContainer');
+        if (!container) return;
+        const icons = { success: '✓', error: '✕', info: 'ℹ' };
+        const toast = document.createElement('div');
+        toast.className = `toast toast--${type}`;
+        toast.innerHTML = `<span class="toast__icon">${icons[type]}</span><span class="toast__message">${message}</span>`;
+        container.appendChild(toast);
+        setTimeout(() => {
+          toast.classList.add('toast--out');
+          setTimeout(() => toast.remove(), 250);
+        }, duration);
+      };
+
+      window.toggleSettingsDropdown = function (dropdownId) {
+        const dropdown = document.getElementById(dropdownId);
+        if (!dropdown) return;
+        dropdown.classList.toggle('settings-dropdown--open');
+      };
+
+      if (btnSettings && settingsModal) {
+        btnSettings.addEventListener('click', () => {
+          if (window.db && window.db.config) {
+            document.getElementById('dbUrl').value = window.db.config.url || '';
+            document.getElementById('dbKey').value = window.db.config.key || '';
+          }
+          settingsModal.classList.add('open');
+        });
+        document.getElementById('settingsClose').addEventListener('click', () => settingsModal.classList.remove('open'));
+        document.getElementById('btnDisconnectDb').addEventListener('click', () => {
+          window.db.clearConfig();
+          settingsModal.classList.remove('open');
+          showToast('Disconnected from Firebase Sync', 'info');
+        });
+        document.getElementById('btnSaveDb').addEventListener('click', () => {
+          const url = document.getElementById('dbUrl').value.trim();
+          const key = document.getElementById('dbKey').value.trim();
+
+          if (!url) return showToast('Please enter Firebase DB URL', 'error');
+
+          const newConfig = { url, key };
+          localStorage.setItem('moneytracker_db_config', JSON.stringify(newConfig));
+          window.db.config = newConfig;
+
+          settingsModal.classList.remove('open');
+          showToast('Sync settings saved!', 'success');
+
+          // Reload to fetch remote data or upload local data
+          setTimeout(() => window.location.reload(), 1000);
+        });
+
+        document.getElementById('btnExportData').addEventListener('click', () => {
+          let expenses = [];
+          try {
+            expenses = JSON.parse(localStorage.getItem('moneytracker_expenses') || '[]');
+          } catch (e) { }
+
+          const data = {
+            expenses,
+            exportedAt: new Date().toISOString()
+          };
+          const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `moneytracker-expenses-backup-${new Date().toISOString().split('T')[0]}.json`;
+          a.click();
+          URL.revokeObjectURL(url);
+          showToast('Data exported successfully!', 'success');
+        });
+
+        document.getElementById('btnImportData').addEventListener('click', () => {
+          const input = document.createElement('input');
+          input.type = 'file';
+          input.accept = '.json';
+          input.onchange = (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (evt) => {
+              try {
+                const data = JSON.parse(evt.target.result);
+                if (data.expenses) {
+                  localStorage.setItem('moneytracker_expenses', JSON.stringify(data.expenses));
+
+                  // Sync remote
+                  if (window.db && window.db.isConfigured()) {
+                    window.db.upsertDocument('moneytracker_data', { _id: 'expenses_state' }, {
+                      expenses: data.expenses
+                    });
+                  }
+
+                  showToast('Data imported successfully! Reloading...', 'success');
+                  setTimeout(() => window.location.reload(), 1500);
+                } else {
+                  showToast('Invalid backup file format (missing expenses)', 'error');
+                }
+              } catch (err) {
+                showToast('Failed to parse backup file', 'error');
+              }
+            };
+            reader.readAsText(file);
+          };
+          input.click();
+        });
+      }
+    })();
+  </script>
+  <script src="expenses.js"></script>
+</body>
+
+</html>
