@@ -516,8 +516,15 @@
     $('#searchExp').addEventListener('input', e => { searchQ = e.target.value; renderList(); });
     document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
 
+    // Listen for database unlock to pull fresh data
+    window.addEventListener('moneytracker:db_unlocked', () => {
+      load();
+    });
+
     render();
   }
+
+  window.reloadExpenses = load;
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
   else init();

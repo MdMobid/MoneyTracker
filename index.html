@@ -14,7 +14,7 @@
 </head>
 
 <body>
-  <div class="app">
+  <div class="app" id="mainApp">
 
     <nav class="topnav">
       <a href="index.html" class="topnav__brand">
@@ -23,8 +23,9 @@
           <div class="topnav__name">Money Tracker</div>
         </div>
       </a>
-      <div style="display: flex; gap: 10px; align-items: center;">
-        <button class="btn-settings" id="btnSettings" title="Sync Settings">⚙️</button>
+      <div style="display: flex; gap: 8px; align-items: center;">
+        <button class="btn-settings" id="btnDbSync" title="Sync with Database">🗘</button>
+        <button class="btn-settings" id="btnSettings" title="Settings">⚙️</button>
         <button class="btn-primary" id="btnAddExp"
           style="background:var(--grad-money);box-shadow:0 4px 18px var(--green-dim);">
           <span style="font-size:1.1rem;font-weight:300">＋</span><span class="btn-text"> Add</span>
@@ -153,27 +154,48 @@
     </div>
   </div>
 
+  <!-- FULLSCREEN MASTER KEY GATE OVERLAY -->
+  <div class="modal-overlay" id="gateModal" style="z-index: 9999; backdrop-filter: blur(16px); background: rgba(15, 23, 42, 0.94);">
+    <div class="modal" id="gateCard" style="max-width: 380px; text-align: center; box-shadow: var(--neu-out), 0 20px 50px rgba(0,0,0,0.7);">
+      <div style="font-size: 2.8rem; margin-bottom: 8px;">🔐</div>
+      <h2 class="modal__title" style="margin-bottom: 6px; font-size: 1.35rem;">Money Tracker</h2>
+      <p style="color:var(--t2);font-size:0.88rem;margin-bottom:20px;line-height:1.5;">
+        Enter your Master Key to authenticate and access your database.
+      </p>
 
-  <!-- SYNC SETTINGS MODAL -->
+      <form id="masterKeyForm" onsubmit="return false;">
+        <div class="modal__field" style="margin-bottom: 20px;">
+          <input class="modal__input" type="password" id="inputMasterKey" placeholder="Enter Master Key" style="text-align: center; letter-spacing: 0.15em; font-size: 1.15rem; font-weight: 600;" autocomplete="current-password" autofocus>
+        </div>
+
+        <div class="modal__actions" style="justify-content: center;">
+          <button type="submit" class="modal__btn modal__btn--primary" id="btnUnlockKey" style="background:var(--grad-primary); width: 100%;">
+            Unlock & Sync
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- SETTINGS MODAL -->
   <div class="modal-overlay" id="settingsModal">
     <div class="modal">
       <button class="modal__close" id="settingsClose">✕</button>
-      <h2 class="modal__title">Sync Settings</h2>
-      <p style="color:var(--t2);font-size:0.9rem;margin-bottom:16px;">Connect Firebase Realtime DB to sync across
-        devices.</p>
-      <div class="modal__field">
-        <label class="modal__label">Firebase DB URL</label>
-        <input class="modal__input" type="text" id="dbUrl" placeholder="https://your-project.firebaseio.com">
-      </div>
-      <div class="modal__field">
-        <label class="modal__label">Database Secret / Auth (Optional)</label>
-        <input class="modal__input" type="password" id="dbKey" placeholder="Your DB Auth Token">
-      </div>
+      <h2 class="modal__title">Settings</h2>
+      <p style="color:var(--t2);font-size:0.88rem;margin-bottom:18px;">
+        Database is connected and syncing automatically.
+      </p>
 
-      <hr style="border:none;border-top:1px solid rgba(255,255,255,0.1);margin:20px 0;">
+      <div style="background:var(--bg-deep);padding:14px;border-radius:var(--r-sm);margin-bottom:16px;box-shadow:var(--neu-in-xs);">
+        <div style="font-size:0.78rem;color:var(--t3);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Connected Database</div>
+        <div style="font-size:0.85rem;color:var(--green);font-family:monospace;word-break:break-all;">
+          money-tracker-b6ba6-default-rtdb.firebaseio.com/webapp
+        </div>
+      </div>
 
       <div class="settings-dropdown" id="importExportDropdown">
         <button class="settings-dropdown__trigger" onclick="toggleSettingsDropdown('importExportDropdown')">
+          <span class="settings-dropdown__icon">📦</span>
           <span class="settings-dropdown__label">Import / Export Data</span>
           <span class="settings-dropdown__arrow">▶</span>
         </button>
@@ -191,11 +213,10 @@
         </div>
       </div>
 
-      <div class="modal__actions">
-        <button class="modal__btn modal__btn--cancel" id="btnDisconnectDb"
-          style="color:rgba(248, 113, 113, 0.8);border-color:rgba(248, 113, 113, 0.3);">Disconnect</button>
-        <button class="modal__btn modal__btn--primary" id="btnSaveDb" style="background:var(--grad-primary);">Save &
-          Sync</button>
+      <div class="modal__actions" style="margin-top:20px;">
+        <button class="modal__btn modal__btn--danger" id="btnLockApp" style="width:100%;">
+          🔒 Lock App / Clear Master Key
+        </button>
       </div>
     </div>
   </div>
@@ -209,62 +230,125 @@
       }).catch(err => console.error(err));
     }
 
-    // ── Settings modal ─────────────────────────────────────
+    // ── Toast & Dropdown Helpers ───────────────────────────
+    window.showToast = (message, type = 'info', duration = 3000) => {
+      const container = document.getElementById('toastContainer');
+      if (!container) return;
+      const icons = { success: '✓', error: '✕', info: 'ℹ' };
+      const toast = document.createElement('div');
+      toast.className = `toast toast--${type}`;
+      toast.innerHTML = `<span class="toast__icon">${icons[type]}</span><span class="toast__message">${message}</span>`;
+      container.appendChild(toast);
+      setTimeout(() => {
+        toast.classList.add('toast--out');
+        setTimeout(() => toast.remove(), 250);
+      }, duration);
+    };
+
+    window.toggleSettingsDropdown = function (dropdownId) {
+      const dropdown = document.getElementById(dropdownId);
+      if (!dropdown) return;
+      dropdown.classList.toggle('settings-dropdown--open');
+    };
+
+    // ── Master Key Gate & Sync Logic ───────────────────────
+    (() => {
+      const gateModal = document.getElementById('gateModal');
+      const gateCard = document.getElementById('gateCard');
+      const inputMasterKey = document.getElementById('inputMasterKey');
+      const masterKeyForm = document.getElementById('masterKeyForm');
+      const btnUnlockKey = document.getElementById('btnUnlockKey');
+      const btnDbSync = document.getElementById('btnDbSync');
+      const btnLockApp = document.getElementById('btnLockApp');
+
+      function checkGate() {
+        if (!window.db || !window.db.isUnlocked()) {
+          gateModal.classList.add('open');
+          setTimeout(() => inputMasterKey.focus(), 100);
+        } else {
+          gateModal.classList.remove('open');
+        }
+      }
+
+      // Check on initial page load
+      checkGate();
+
+      // Master Key submission
+      async function handleKeySubmit() {
+        const key = inputMasterKey.value.trim();
+        if (!key) {
+          showToast('Please enter your Master Key', 'error');
+          return;
+        }
+
+        btnUnlockKey.textContent = 'Verifying...';
+        btnUnlockKey.disabled = true;
+
+        try {
+          await window.db.setMasterKey(key);
+          gateModal.classList.remove('open');
+          showToast('Authenticated! Synchronizing data...', 'success');
+          if (window.reloadExpenses) window.reloadExpenses();
+        } catch (e) {
+          gateCard.classList.add('modal-shake');
+          setTimeout(() => gateCard.classList.remove('modal-shake'), 450);
+          showToast(e.message || 'Authentication failed', 'error');
+          inputMasterKey.value = '';
+          inputMasterKey.focus();
+        } finally {
+          btnUnlockKey.textContent = 'Unlock & Sync';
+          btnUnlockKey.disabled = false;
+        }
+      }
+
+      if (masterKeyForm) {
+        masterKeyForm.addEventListener('submit', (e) => {
+          e.preventDefault();
+          handleKeySubmit();
+        });
+      }
+
+      // Quick Sync button in navbar
+      if (btnDbSync) {
+        btnDbSync.addEventListener('click', () => {
+          if (!window.db.isUnlocked()) {
+            checkGate();
+            return;
+          }
+          btnDbSync.classList.add('spin-sync');
+          showToast('Syncing with database...', 'info', 1200);
+          if (window.reloadExpenses) window.reloadExpenses();
+          window.db.processQueue().finally(() => {
+            setTimeout(() => btnDbSync.classList.remove('spin-sync'), 600);
+          });
+        });
+      }
+
+      // Lock App Button in Settings
+      if (btnLockApp) {
+        btnLockApp.addEventListener('click', () => {
+          window.db.clearMasterKey();
+          document.getElementById('settingsModal')?.classList.remove('open');
+          inputMasterKey.value = '';
+          checkGate();
+          showToast('App locked and key cleared', 'info');
+        });
+      }
+    })();
+
+    // ── Settings Modal & Backup ────────────────────────────
     (() => {
       const btnSettings = document.getElementById('btnSettings');
       const settingsModal = document.getElementById('settingsModal');
 
-      window.showToast = (message, type = 'info', duration = 3000) => {
-        const container = document.getElementById('toastContainer');
-        if (!container) return;
-        const icons = { success: '✓', error: '✕', info: 'ℹ' };
-        const toast = document.createElement('div');
-        toast.className = `toast toast--${type}`;
-        toast.innerHTML = `<span class="toast__icon">${icons[type]}</span><span class="toast__message">${message}</span>`;
-        container.appendChild(toast);
-        setTimeout(() => {
-          toast.classList.add('toast--out');
-          setTimeout(() => toast.remove(), 250);
-        }, duration);
-      };
-
-      window.toggleSettingsDropdown = function (dropdownId) {
-        const dropdown = document.getElementById(dropdownId);
-        if (!dropdown) return;
-        dropdown.classList.toggle('settings-dropdown--open');
-      };
-
       if (btnSettings && settingsModal) {
         btnSettings.addEventListener('click', () => {
-          if (window.db && window.db.config) {
-            document.getElementById('dbUrl').value = window.db.config.url || '';
-            document.getElementById('dbKey').value = window.db.config.key || '';
-          }
           settingsModal.classList.add('open');
         });
+
         document.getElementById('settingsClose').addEventListener('click', () => settingsModal.classList.remove('open'));
-        document.getElementById('btnDisconnectDb').addEventListener('click', () => {
-          window.db.clearConfig();
-          settingsModal.classList.remove('open');
-          showToast('Disconnected from Firebase Sync', 'info');
-        });
-        document.getElementById('btnSaveDb').addEventListener('click', () => {
-          const url = document.getElementById('dbUrl').value.trim();
-          const key = document.getElementById('dbKey').value.trim();
 
-          if (!url) return showToast('Please enter Firebase DB URL', 'error');
-
-          const newConfig = { url, key };
-          localStorage.setItem('moneytracker_db_config', JSON.stringify(newConfig));
-          window.db.config = newConfig;
-
-          settingsModal.classList.remove('open');
-          showToast('Sync settings saved!', 'success');
-
-          // Reload to fetch remote data or upload local data
-          setTimeout(() => window.location.reload(), 1000);
-        });
-
+        // Export Data
         document.getElementById('btnExportData').addEventListener('click', () => {
           let expenses = [];
           try {
@@ -285,6 +369,7 @@
           showToast('Data exported successfully!', 'success');
         });
 
+        // Import Data
         document.getElementById('btnImportData').addEventListener('click', () => {
           const input = document.createElement('input');
           input.type = 'file';
@@ -298,16 +383,13 @@
                 const data = JSON.parse(evt.target.result);
                 if (data.expenses) {
                   localStorage.setItem('moneytracker_expenses', JSON.stringify(data.expenses));
-
-                  // Sync remote
                   if (window.db && window.db.isConfigured()) {
                     window.db.upsertDocument('moneytracker_data', { _id: 'expenses_state' }, {
                       expenses: data.expenses
                     });
                   }
-
                   showToast('Data imported successfully! Reloading...', 'success');
-                  setTimeout(() => window.location.reload(), 1500);
+                  setTimeout(() => window.location.reload(), 1200);
                 } else {
                   showToast('Invalid backup file format (missing expenses)', 'error');
                 }

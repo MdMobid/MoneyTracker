@@ -975,3 +975,42 @@ h4 {
 .import-export-btn--export:hover {
   border-left-color: var(--green);
 }
+
+/* ── SYNC & LOCK STATUS STYLES ── */
+@keyframes spinSync {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.spin-sync {
+  display: inline-block;
+  animation: spinSync 0.9s linear infinite;
+}
+
+@keyframes shakeModal {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-8px); }
+  40%, 80% { transform: translateX(8px); }
+}
+
+.modal-shake {
+  animation: shakeModal 0.4s var(--ease) !important;
+}
+
+.config-code-box {
+  width: 100%;
+  box-sizing: border-box;
+  background: var(--bg-deeper);
+  color: #34d399;
+  font-family: 'Consolas', 'Courier New', monospace;
+  font-size: 0.78rem;
+  padding: 12px;
+  border-radius: var(--r-xs);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  white-space: pre-wrap;
+  word-break: break-all;
+  max-height: 140px;
+  overflow-y: auto;
+  user-select: all;
+  margin-top: 8px;
+}

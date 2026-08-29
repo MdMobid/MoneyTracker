@@ -1,4 +1,4 @@
-const CACHE_NAME = 'moneytracker-v7.0';
+const CACHE_NAME = 'moneytracker-v8.0';
 const ASSETS = [
   './',
   './index.html',
@@ -31,9 +31,9 @@ self.addEventListener('fetch', e => {
   // Only cache GET requests — POST/PUT/etc. are unsupported by Cache API
   if (e.request.method !== 'GET') return;
 
-  // Do not cache API requests to MongoDB
-  if (e.request.url.includes('mongodb-api.com')) {
-    return; // Pass through to browser fetch
+  // Do not cache API requests to Firebase
+  if (e.request.url.includes('firebaseio.com')) {
+    return; // Pass through to network fetch
   }
 
   e.respondWith(
