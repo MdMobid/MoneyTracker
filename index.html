@@ -24,7 +24,15 @@
         </div>
       </a>
       <div style="display: flex; gap: 8px; align-items: center;">
-        <button class="btn-settings" id="btnDbSync" title="Sync with Database">🗘</button>
+        <button class="btn-settings" id="btnDbSync" title="Sync with Database" aria-label="Sync with Database">
+          <svg class="sync-icon" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" />
+            <path d="M21 3v5h-5" />
+            <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" />
+            <path d="M8 16H3v5" />
+          </svg>
+        </button>
         <button class="btn-settings" id="btnSettings" title="Settings">⚙️</button>
         <button class="btn-primary" id="btnAddExp"
           style="background:var(--grad-money);box-shadow:0 4px 18px var(--green-dim);">
@@ -155,8 +163,10 @@
   </div>
 
   <!-- FULLSCREEN MASTER KEY GATE OVERLAY -->
-  <div class="modal-overlay" id="gateModal" style="z-index: 9999; backdrop-filter: blur(16px); background: rgba(15, 23, 42, 0.94);">
-    <div class="modal" id="gateCard" style="max-width: 380px; text-align: center; box-shadow: var(--neu-out), 0 20px 50px rgba(0,0,0,0.7);">
+  <div class="modal-overlay" id="gateModal"
+    style="z-index: 9999; backdrop-filter: blur(16px); background: rgba(15, 23, 42, 0.94);">
+    <div class="modal" id="gateCard"
+      style="max-width: 380px; text-align: center; box-shadow: var(--neu-out), 0 20px 50px rgba(0,0,0,0.7);">
       <div style="font-size: 2.8rem; margin-bottom: 8px;">🔐</div>
       <h2 class="modal__title" style="margin-bottom: 6px; font-size: 1.35rem;">Money Tracker</h2>
       <p style="color:var(--t2);font-size:0.88rem;margin-bottom:20px;line-height:1.5;">
@@ -165,11 +175,14 @@
 
       <form id="masterKeyForm" onsubmit="return false;">
         <div class="modal__field" style="margin-bottom: 20px;">
-          <input class="modal__input" type="password" id="inputMasterKey" placeholder="Enter Master Key" style="text-align: center; letter-spacing: 0.15em; font-size: 1.15rem; font-weight: 600;" autocomplete="current-password" autofocus>
+          <input class="modal__input" type="password" id="inputMasterKey" placeholder="Enter Master Key"
+            style="text-align: center; letter-spacing: 0.15em; font-size: 1.15rem; font-weight: 600;"
+            autocomplete="current-password" autofocus>
         </div>
 
         <div class="modal__actions" style="justify-content: center;">
-          <button type="submit" class="modal__btn modal__btn--primary" id="btnUnlockKey" style="background:var(--grad-primary); width: 100%;">
+          <button type="submit" class="modal__btn modal__btn--primary" id="btnUnlockKey"
+            style="background:var(--grad-primary); width: 100%;">
             Unlock & Sync
           </button>
         </div>
@@ -186,8 +199,11 @@
         Database is connected and syncing automatically.
       </p>
 
-      <div style="background:var(--bg-deep);padding:14px;border-radius:var(--r-sm);margin-bottom:16px;box-shadow:var(--neu-in-xs);">
-        <div style="font-size:0.78rem;color:var(--t3);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Connected Database</div>
+      <div
+        style="background:var(--bg-deep);padding:14px;border-radius:var(--r-sm);margin-bottom:16px;box-shadow:var(--neu-in-xs);">
+        <div
+          style="font-size:0.78rem;color:var(--t3);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">
+          Connected Database</div>
         <div style="font-size:0.85rem;color:var(--green);font-family:monospace;word-break:break-all;">
           money-tracker-b6ba6-default-rtdb.firebaseio.com/webapp
         </div>

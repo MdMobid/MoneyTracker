@@ -704,6 +704,11 @@ h4 {
   flex-shrink: 0;
 }
 
+.btn-settings svg {
+  display: block;
+  pointer-events: none;
+}
+
 .btn-settings:hover {
   color: var(--cyan);
   box-shadow: var(--neu-out-sm);
@@ -978,19 +983,45 @@ h4 {
 
 /* ── SYNC & LOCK STATUS STYLES ── */
 @keyframes spinSync {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .spin-sync {
-  display: inline-block;
+  display: inline-flex;
+}
+
+.spin-sync svg,
+.spin-sync .sync-icon {
   animation: spinSync 0.9s linear infinite;
+  transform-origin: center;
+}
+
+button.spin-sync {
+  animation: none;
 }
 
 @keyframes shakeModal {
-  0%, 100% { transform: translateX(0); }
-  20%, 60% { transform: translateX(-8px); }
-  40%, 80% { transform: translateX(8px); }
+
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+
+  20%,
+  60% {
+    transform: translateX(-8px);
+  }
+
+  40%,
+  80% {
+    transform: translateX(8px);
+  }
 }
 
 .modal-shake {
@@ -1013,4 +1044,4 @@ h4 {
   overflow-y: auto;
   user-select: all;
   margin-top: 8px;
-}
+}
