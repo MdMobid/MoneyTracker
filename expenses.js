@@ -1,9 +1,10 @@
 (() => {
   'use strict';
   const STORAGE_KEY = 'moneytracker_expenses';
+  const STORAGE_KEY_BUDGETS = 'moneytracker_budgets';
   const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
-  let state = { expenses: [] };
+  let state = { expenses: [], budgets: [] };
   let viewDate = { year: new Date().getFullYear(), month: new Date().getMonth() };
   let editingId = null;
   let searchQ = '';
@@ -12,6 +13,7 @@
   const $ = s => document.querySelector(s);
   const $$ = s => document.querySelectorAll(s);
   const genId = () => 'e_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7);
+  const genBudgetId = () => 'b_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
   const todayStr = () => new Date().toISOString().slice(0, 10);
   const fmtAmt = n => '₹' + Number(n).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
   const fmtDate = ds => { if (!ds) return ''; const d = new Date(ds + 'T00:00:00'); return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }); };
@@ -29,14 +31,21 @@
   /* ── PERSISTENCE ── */
   const save = () => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state.expenses));
+    localStorage.setItem(STORAGE_KEY_BUDGETS, JSON.stringify(state.budgets || []));
     if (window.db) {
       window.db.upsertDocument('moneytracker_data', { _id: 'expenses_state' }, {
-        expenses: state.expenses
+        expenses: state.expenses,
+        budgets: state.budgets || []
       });
     }
   };
   function load() {
-    try { const r = localStorage.getItem(STORAGE_KEY); if (r) state.expenses = JSON.parse(r); } catch (e) { }
+    try {
+      const r = localStorage.getItem(STORAGE_KEY);
+      if (r) state.expenses = JSON.parse(r);
+      const b = localStorage.getItem(STORAGE_KEY_BUDGETS);
+      if (b) state.budgets = JSON.parse(b);
+    } catch (e) { }
 
     if (window.db && window.db.isConfigured()) {
       window.db.fetchDocuments('moneytracker_data').then(docs => {
@@ -44,7 +53,9 @@
         const remoteInfo = docs.find(d => d._id === 'expenses_state');
         if (remoteInfo) {
           if (remoteInfo.expenses) state.expenses = remoteInfo.expenses;
+          if (remoteInfo.budgets) state.budgets = remoteInfo.budgets;
           localStorage.setItem(STORAGE_KEY, JSON.stringify(state.expenses));
+          localStorage.setItem(STORAGE_KEY_BUDGETS, JSON.stringify(state.budgets || []));
           render();
         }
       });
@@ -306,12 +317,13 @@
     $$('.bottom-nav__item').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
     $$('.tab-content').forEach(c => c.classList.toggle('active', c.id === `tab-${tab}`));
 
-    // Re-render chart when switching to insights (needs visible container for width)
     if (tab === 'insights') {
       setTimeout(() => {
         renderBarChart();
         updateStats();
       }, 50);
+    } else if (tab === 'budget') {
+      renderBudgetTab();
     }
   }
 
@@ -337,6 +349,7 @@
     updateStats();
     renderBarChart();
     renderList();
+    renderBudgetTab();
   }
 
   /* ── MODAL ── */
@@ -483,6 +496,322 @@
     save(); render();
   };
 
+  /* ── SEQUENTIAL BUDGET CASCADE (FIFO) ── */
+  function computeBudgetCascade() {
+    if (!state.budgets || state.budgets.length === 0) {
+      const totalSpent = state.expenses.reduce((s, e) => s + Number(e.amount), 0);
+      return {
+        budgets: [],
+        activeBudget: null,
+        pendingOverflow: totalSpent,
+        hasBudgets: false
+      };
+    }
+
+    // Clone and sort budgets chronologically: date asc, createdAt asc
+    const budgets = state.budgets.map(b => ({
+      id: b.id,
+      amount: Number(b.amount),
+      date: b.date,
+      createdAt: b.createdAt || 0,
+      spent: 0,
+      remaining: Number(b.amount),
+      isFinished: false,
+      count: 0
+    })).sort((a, b) => {
+      if (a.date !== b.date) return a.date.localeCompare(b.date);
+      return (a.createdAt || 0) - (b.createdAt || 0);
+    });
+
+    // Clone and sort expenses chronologically: date asc, id asc
+    const expenses = [...state.expenses].sort((a, b) => {
+      if (a.date !== b.date) return a.date.localeCompare(b.date);
+      return a.id.localeCompare(b.id);
+    });
+
+    let bIdx = 0;
+    let pendingOverflow = 0;
+    const pendingExpenses = [];
+
+    for (const exp of expenses) {
+      const amt = Number(exp.amount);
+      if (isNaN(amt) || amt <= 0) continue;
+
+      // Find the first budget with remaining balance > 0
+      while (bIdx < budgets.length && budgets[bIdx].remaining <= 0) {
+        budgets[bIdx].isFinished = true;
+        bIdx++;
+      }
+
+      if (bIdx >= budgets.length) {
+        // All existing budgets are finished! Any subsequent expense is pending overflow
+        pendingOverflow += amt;
+        pendingExpenses.push(exp);
+        continue;
+      }
+
+      const curB = budgets[bIdx];
+      if (curB.remaining >= amt) {
+        curB.remaining = Math.max(0, curB.remaining - amt);
+        curB.spent += amt;
+        curB.count++;
+        if (curB.remaining === 0) {
+          curB.isFinished = true;
+        }
+      } else {
+        // Partial fit: drains the rest of curB, curB finishes, and remainder moves to next budget
+        const covered = curB.remaining;
+        const leftover = amt - covered;
+        curB.spent += covered;
+        curB.remaining = 0;
+        curB.isFinished = true;
+        curB.count++;
+
+        bIdx++;
+        if (bIdx < budgets.length) {
+          const nextB = budgets[bIdx];
+          const nextCovered = Math.min(nextB.remaining, leftover);
+          nextB.remaining = Math.max(0, nextB.remaining - nextCovered);
+          nextB.spent += nextCovered;
+          nextB.count++;
+          if (nextB.remaining === 0) nextB.isFinished = true;
+
+          const unabsorbed = leftover - nextCovered;
+          if (unabsorbed > 0) {
+            pendingOverflow += unabsorbed;
+            pendingExpenses.push(exp);
+          }
+        } else {
+          pendingOverflow += leftover;
+          pendingExpenses.push(exp);
+        }
+      }
+    }
+
+    budgets.forEach(b => {
+      if (b.remaining <= 0) b.isFinished = true;
+    });
+
+    // Active budget is the first non-finished budget, or if all are finished, the latest one
+    const activeBudget = budgets.find(b => !b.isFinished) || (budgets.length > 0 ? budgets[budgets.length - 1] : null);
+
+    return {
+      budgets,
+      activeBudget,
+      pendingOverflow,
+      pendingExpenses,
+      hasBudgets: true
+    };
+  }
+
+  /* ── BUDGET TAB RENDERING ── */
+  function renderBudgetTab() {
+    const displayEl = $('#budgetDisplay');
+    if (!displayEl) return;
+
+    const cascade = computeBudgetCascade();
+
+    if (!cascade.hasBudgets) {
+      displayEl.innerHTML = `
+        <div class="empty-state" style="padding:36px 14px;">
+          <div class="empty-state__icon">💰</div>
+          <h3 class="empty-state__title">No Budget Added</h3>
+          <p class="empty-state__text" style="max-width:300px;margin:0 auto 16px;font-size:0.82rem;">
+            Add your budget amount. Daily expenses will count down from it and show your live remaining balance.
+          </p>
+          <button class="btn-primary" onclick="window.__openBudgetModal()" style="background:var(--grad-money);box-shadow:0 4px 18px var(--green-dim);margin:0 auto;">
+            <span style="font-size:1.1rem;font-weight:300">＋</span><span> Add First Budget</span>
+          </button>
+        </div>
+      `;
+      return;
+    }
+
+    const { activeBudget, pendingOverflow, budgets } = cascade;
+    let cardHtml = '';
+
+    if (activeBudget) {
+      const isFin = activeBudget.isFinished;
+      const spent = activeBudget.spent;
+      const total = activeBudget.amount;
+      const rem = activeBudget.remaining;
+      const remPct = total > 0 ? (rem / total) * 100 : 0;
+      const spentPct = Math.min(100, Math.max(0, 100 - remPct));
+
+      let tagClass = 'budget-card__tag--active';
+      let tagText = 'Active Budget';
+      let fillGradient = 'linear-gradient(90deg, #00d4ff, #34d399)';
+
+      if (isFin) {
+        tagClass = 'budget-card__tag--finished';
+        tagText = 'Budget Finished';
+        fillGradient = 'linear-gradient(90deg, #f87171, #ef4444)';
+      } else if (remPct <= 20) {
+        tagClass = 'budget-card__tag--low';
+        tagText = 'Low Balance';
+        fillGradient = 'linear-gradient(90deg, #fbbf24, #f59e0b)';
+      }
+
+      cardHtml = `
+        <div class="budget-card">
+          <div class="budget-card__header">
+            <span class="budget-card__tag ${tagClass}">
+              <span>●</span> ${tagText}
+            </span>
+            <span class="budget-card__date">
+              Added ${fmtDate(activeBudget.date)}
+            </span>
+          </div>
+
+          <div class="budget-card__balance-label">
+            ${isFin ? 'Remaining Balance (Exhausted)' : 'Remaining Balance'}
+          </div>
+          <div class="budget-card__balance-value" style="color:${isFin ? 'var(--red)' : (remPct <= 20 ? 'var(--orange)' : 'var(--green)')}">
+            ${fmtAmt(rem)}
+          </div>
+          <div class="budget-card__balance-sub">
+            ${fmtAmt(spent)} spent of ${fmtAmt(total)}
+          </div>
+
+          <div class="budget-progress-track">
+            <div class="budget-progress-fill" style="width:${spentPct}%;background:${fillGradient};"></div>
+          </div>
+
+          <div class="budget-stats-grid">
+            <div class="budget-stat-item">
+              <span class="budget-stat-label">Budget</span>
+              <span class="budget-stat-value">${fmtAmt(total)}</span>
+            </div>
+            <div class="budget-stat-item">
+              <span class="budget-stat-label">Spent</span>
+              <span class="budget-stat-value" style="color:var(--red);">${fmtAmt(spent)}</span>
+            </div>
+            <div class="budget-stat-item">
+              <span class="budget-stat-label">Remaining</span>
+              <span class="budget-stat-value" style="color:${isFin ? 'var(--t3)' : 'var(--green)'};">${fmtAmt(rem)}</span>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    let pendingHtml = '';
+    if (pendingOverflow > 0) {
+      pendingHtml = `
+        <div class="budget-alert">
+          <div class="budget-alert__icon">⏳</div>
+          <div class="budget-alert__body">
+            <div class="budget-alert__title">Pending Expenses: ${fmtAmt(pendingOverflow)}</div>
+            <div class="budget-alert__text">
+              These expenses were added after your previous budget hit zero. Once you add a new budget, this will be automatically counted and deducted from it.
+            </div>
+            <button class="btn-primary budget-alert__btn" onclick="window.__openBudgetModal()" style="background:var(--grad-money);">
+              <span style="font-weight:300">＋</span><span> Add Next Budget</span>
+            </button>
+          </div>
+        </div>
+      `;
+    }
+
+    const reversedBudgets = [...budgets].reverse();
+    let historyHtml = `
+      <div class="budget-history-card">
+        <div class="budget-history-title">
+          <span>Budget History</span>
+          <span class="budget-history-count">${budgets.length} total</span>
+        </div>
+        <div>
+          ${reversedBudgets.map(b => `
+            <div class="budget-history-item">
+              <div class="budget-history-left">
+                <span class="budget-history-amt">${fmtAmt(b.amount)}</span>
+                <span class="budget-history-date">${fmtDate(b.date)} • ${b.isFinished ? 'Finished' : 'Active'}</span>
+              </div>
+              <div class="budget-history-right">
+                <div class="budget-history-spent-wrap">
+                  <span class="budget-history-spent-label">Spent</span>
+                  <span class="budget-history-spent-val">${fmtAmt(b.spent)}</span>
+                </div>
+                <button class="btn-del-budget" title="Delete budget" onclick="window.__deleteBudget('${b.id}')">🗑️</button>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `;
+
+    displayEl.innerHTML = cardHtml + pendingHtml + historyHtml;
+  }
+
+  /* ── BUDGET MODAL LOGIC ── */
+  function openBudgetModal() {
+    const cascade = computeBudgetCascade();
+    const noticeEl = $('#budgetPendingNotice');
+    if (noticeEl) {
+      if (cascade.pendingOverflow > 0) {
+        noticeEl.style.display = 'block';
+        noticeEl.innerHTML = `⚠️ <strong>${fmtAmt(cascade.pendingOverflow)}</strong> in pending expenses will be deducted from this new budget.`;
+      } else {
+        noticeEl.style.display = 'none';
+      }
+    }
+    const dateInp = $('#budgetDate');
+    const amtInp = $('#budgetAmount');
+    if (dateInp) dateInp.value = todayStr();
+    if (amtInp) {
+      amtInp.value = '';
+      amtInp.style.boxShadow = '';
+    }
+    $('#budgetModal')?.classList.add('open');
+    setTimeout(() => amtInp?.focus(), 150);
+  }
+
+  function closeBudgetModal() {
+    $('#budgetModal')?.classList.remove('open');
+  }
+
+  function saveBudget() {
+    const amtInp = $('#budgetAmount');
+    const amt = parseFloat(amtInp?.value);
+    const dateVal = $('#budgetDate')?.value || todayStr();
+
+    if (isNaN(amt) || amt <= 0) {
+      if (amtInp) {
+        amtInp.style.boxShadow = 'var(--neu-in-sm),0 0 0 2px var(--red-dim)';
+        setTimeout(() => amtInp.style.boxShadow = '', 1500);
+      }
+      return;
+    }
+
+    if (!state.budgets) state.budgets = [];
+    state.budgets.push({
+      id: genBudgetId(),
+      amount: amt,
+      date: dateVal,
+      createdAt: Date.now()
+    });
+
+    save();
+    closeBudgetModal();
+    render();
+    if (window.showToast) {
+      window.showToast('Budget added!', 'success');
+    }
+  }
+
+  function deleteBudget(id) {
+    if (window.confirm && window.confirm('Delete this budget?') === false) return;
+    state.budgets = (state.budgets || []).filter(b => b.id !== id);
+    save();
+    render();
+    if (window.showToast) {
+      window.showToast('Budget deleted', 'info');
+    }
+  }
+
+  window.__openBudgetModal = openBudgetModal;
+  window.__deleteBudget = deleteBudget;
+
   /* ── INIT ── */
   function init() {
     load();
@@ -513,8 +842,26 @@
     $('#expModal').addEventListener('click', e => { if (e.target === $('#expModal')) closeModal(); });
     $('#expSave').addEventListener('click', () => saveExpense());
 
+    // Budget modal listeners
+    $('#btnOpenAddBudget')?.addEventListener('click', openBudgetModal);
+    $('#budgetCancel')?.addEventListener('click', closeBudgetModal);
+    $('#budgetClose')?.addEventListener('click', closeBudgetModal);
+    $('#budgetModal')?.addEventListener('click', e => { if (e.target === $('#budgetModal')) closeBudgetModal(); });
+    $('#budgetSave')?.addEventListener('click', saveBudget);
+    $('#budgetAmount')?.addEventListener('keydown', e => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        saveBudget();
+      }
+    });
+
     $('#searchExp').addEventListener('input', e => { searchQ = e.target.value; renderList(); });
-    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape') {
+        closeModal();
+        closeBudgetModal();
+      }
+    });
 
     // Listen for database unlock to pull fresh data
     window.addEventListener('moneytracker:db_unlocked', () => {

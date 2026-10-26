@@ -47,6 +47,10 @@
         <span class="bottom-nav__icon">💳</span>
         <span class="bottom-nav__label">Expenses</span>
       </button>
+      <button class="bottom-nav__item" data-tab="budget">
+        <span class="bottom-nav__icon">💰</span>
+        <span class="bottom-nav__label">Budget</span>
+      </button>
       <button class="bottom-nav__item" data-tab="insights">
         <span class="bottom-nav__icon">📊</span>
         <span class="bottom-nav__label">Insights</span>
@@ -72,6 +76,25 @@
       </div>
 
       <div id="expList"></div>
+    </div>
+
+    <!-- ═══════════ BUDGET TAB ═══════════ -->
+    <div class="tab-content" id="tab-budget">
+      <div class="budget-top-bar">
+        <div class="budget-top-info">
+          <span class="budget-top-icon">💰</span>
+          <div style="min-width:0;">
+            <div class="budget-top-title">Budget Tracker</div>
+            <div class="budget-top-sub">Track daily spending vs budget</div>
+          </div>
+        </div>
+        <button class="btn-primary budget-add-btn" id="btnOpenAddBudget"
+          style="background:var(--grad-money);box-shadow:0 4px 18px var(--green-dim);">
+          <span style="font-size:1.1rem;font-weight:300">＋</span><span class="budget-btn-text"> Add</span>
+        </button>
+      </div>
+
+      <div id="budgetDisplay"></div>
     </div>
 
     <!-- ═══════════ INSIGHTS TAB ═══════════ -->
@@ -158,6 +181,41 @@
       <div class="modal__actions">
         <button class="modal__btn modal__btn--cancel" id="expCancel">Cancel</button>
         <button class="modal__btn modal__btn--primary" id="expSave" style="background:var(--grad-money);">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- BUDGET ADD MODAL -->
+  <div class="modal-overlay" id="budgetModal">
+    <div class="modal">
+      <button class="modal__close" id="budgetClose">✕</button>
+      <h2 class="modal__title">Add Budget</h2>
+      <p style="color:var(--t2);font-size:0.85rem;margin-bottom:16px;">
+        Add money to your budget. Daily expenses will count down from it.
+      </p>
+
+      <div class="modal-form">
+        <div class="modal__field" style="margin-bottom: 14px;">
+          <label class="modal__label">Amount (₹)</label>
+          <input class="modal__input" type="number" id="budgetAmount" inputmode="decimal" placeholder="0.00" min="1"
+            step="any" style="font-size:1.35rem;font-weight:700;color:var(--green);text-align:center;" required
+            autofocus>
+        </div>
+
+        <div class="modal__field" style="margin-bottom: 14px;">
+          <label class="modal__label">Date</label>
+          <input class="modal__input" type="date" id="budgetDate">
+        </div>
+
+        <div id="budgetPendingNotice"
+          style="display:none;background:var(--bg-deep);padding:10px 12px;border-radius:var(--r-xs);font-size:0.8rem;color:var(--orange);margin-bottom:14px;border-left:3px solid var(--orange);">
+        </div>
+      </div>
+
+      <div class="modal__actions">
+        <button class="modal__btn modal__btn--cancel" id="budgetCancel">Cancel</button>
+        <button class="modal__btn modal__btn--primary" id="budgetSave" style="background:var(--grad-money);">Add
+          Budget</button>
       </div>
     </div>
   </div>
@@ -367,12 +425,15 @@
         // Export Data
         document.getElementById('btnExportData').addEventListener('click', () => {
           let expenses = [];
+          let budgets = [];
           try {
             expenses = JSON.parse(localStorage.getItem('moneytracker_expenses') || '[]');
+            budgets = JSON.parse(localStorage.getItem('moneytracker_budgets') || '[]');
           } catch (e) { }
 
           const data = {
             expenses,
+            budgets,
             exportedAt: new Date().toISOString()
           };
           const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -399,9 +460,13 @@
                 const data = JSON.parse(evt.target.result);
                 if (data.expenses) {
                   localStorage.setItem('moneytracker_expenses', JSON.stringify(data.expenses));
+                  if (data.budgets) {
+                    localStorage.setItem('moneytracker_budgets', JSON.stringify(data.budgets));
+                  }
                   if (window.db && window.db.isConfigured()) {
                     window.db.upsertDocument('moneytracker_data', { _id: 'expenses_state' }, {
-                      expenses: data.expenses
+                      expenses: data.expenses,
+                      budgets: data.budgets || []
                     });
                   }
                   showToast('Data imported successfully! Reloading...', 'success');

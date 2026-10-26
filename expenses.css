@@ -883,3 +883,469 @@
     font-size: 0.58rem;
   }
 }
+
+/* ═══════════ BUDGET TAB STYLES ═══════════ */
+.budget-top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 14px;
+  padding: 10px 14px;
+  background: var(--bg);
+  border-radius: var(--r-md);
+  box-shadow: var(--neu-out-sm);
+}
+
+.budget-top-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  flex: 1;
+}
+
+.budget-top-icon {
+  font-size: 1.3rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.budget-top-title {
+  font-family: 'Outfit', sans-serif;
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--t1);
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.2;
+}
+
+.budget-top-sub {
+  font-size: 0.72rem;
+  color: var(--t3);
+  margin-top: 1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.budget-add-btn {
+  padding: 8px 14px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  border-radius: var(--r-xs);
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* ── ACTIVE BUDGET CARD ── */
+.budget-card {
+  background: var(--bg);
+  border-radius: var(--r-md);
+  padding: 18px;
+  box-shadow: var(--neu-out-sm);
+  position: relative;
+  overflow: hidden;
+  margin-bottom: 14px;
+  animation: fadeUp 0.35s var(--ease) both;
+}
+
+.budget-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.budget-card__tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border-radius: 20px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+
+.budget-card__tag--active {
+  background: rgba(52, 211, 153, 0.12);
+  color: #34d399;
+  border: 1px solid rgba(52, 211, 153, 0.3);
+}
+
+.budget-card__tag--low {
+  background: rgba(251, 191, 36, 0.12);
+  color: #fbbf24;
+  border: 1px solid rgba(251, 191, 36, 0.3);
+}
+
+.budget-card__tag--finished {
+  background: rgba(248, 113, 113, 0.12);
+  color: #f87171;
+  border: 1px solid rgba(248, 113, 113, 0.3);
+}
+
+.budget-card__date {
+  font-size: 0.72rem;
+  color: var(--t3);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.budget-card__balance-label {
+  font-size: 0.72rem;
+  color: var(--t3);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+  margin-bottom: 3px;
+}
+
+.budget-card__balance-value {
+  font-family: 'Outfit', sans-serif;
+  font-size: clamp(1.75rem, 6.5vw, 2.3rem);
+  font-weight: 900;
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+  margin-bottom: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.budget-card__balance-sub {
+  font-size: 0.8rem;
+  color: var(--t2);
+  margin-bottom: 14px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.budget-progress-track {
+  width: 100%;
+  height: 8px;
+  background: var(--bg-deep);
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: var(--neu-in-xs);
+  margin-bottom: 14px;
+}
+
+.budget-progress-fill {
+  height: 100%;
+  border-radius: 6px;
+  transition: width 0.5s var(--ease), background 0.5s var(--ease);
+}
+
+.budget-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  background: var(--bg-deep);
+  padding: 10px 8px;
+  border-radius: var(--r-sm);
+  box-shadow: var(--neu-in-xs);
+}
+
+.budget-stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  min-width: 0;
+}
+
+.budget-stat-label {
+  font-size: 0.62rem;
+  color: var(--t3);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  margin-bottom: 2px;
+  white-space: nowrap;
+}
+
+.budget-stat-value {
+  font-family: 'Outfit', sans-serif;
+  font-size: clamp(0.85rem, 3.2vw, 1.05rem);
+  font-weight: 700;
+  color: var(--t1);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
+}
+
+/* ── BUDGET PENDING ALERT ── */
+.budget-alert {
+  background: var(--bg);
+  border-radius: var(--r-md);
+  padding: 14px;
+  border-left: 3px solid var(--orange);
+  box-shadow: var(--neu-out-sm);
+  margin-bottom: 14px;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.budget-alert__icon {
+  font-size: 1.25rem;
+  flex-shrink: 0;
+  line-height: 1.2;
+}
+
+.budget-alert__body {
+  flex: 1;
+  min-width: 0;
+}
+
+.budget-alert__title {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--orange);
+  margin-bottom: 3px;
+}
+
+.budget-alert__text {
+  font-size: 0.76rem;
+  color: var(--t2);
+  line-height: 1.4;
+  margin-bottom: 10px;
+}
+
+.budget-alert__btn {
+  padding: 6px 14px;
+  font-size: 0.82rem;
+  border-radius: var(--r-xs);
+}
+
+/* ── BUDGET HISTORY CARD ── */
+.budget-history-card {
+  background: var(--bg);
+  border-radius: var(--r-md);
+  padding: 16px;
+  box-shadow: var(--neu-out-sm);
+  margin-bottom: 14px;
+}
+
+.budget-history-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--t1);
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.budget-history-count {
+  font-size: 0.7rem;
+  color: var(--t3);
+  font-weight: normal;
+}
+
+.budget-history-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  background: var(--bg-deep);
+  border-radius: var(--r-xs);
+  margin-bottom: 8px;
+  box-shadow: var(--neu-in-xs);
+  gap: 8px;
+}
+
+.budget-history-item:last-child {
+  margin-bottom: 0;
+}
+
+.budget-history-left {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+
+.budget-history-date {
+  font-size: 0.68rem;
+  color: var(--t3);
+  font-weight: 600;
+  margin-top: 1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.budget-history-amt {
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.98rem;
+  font-weight: 700;
+  color: var(--t1);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.budget-history-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.budget-history-spent-wrap {
+  text-align: right;
+}
+
+.budget-history-spent-label {
+  font-size: 0.6rem;
+  color: var(--t3);
+  text-transform: uppercase;
+  display: block;
+}
+
+.budget-history-spent-val {
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--t2);
+}
+
+.btn-del-budget {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  font-size: 0.85rem;
+  cursor: pointer;
+  padding: 0;
+  opacity: 0.6;
+  border-radius: 4px;
+  transition: opacity 0.2s, transform 0.2s;
+}
+
+.btn-del-budget:hover {
+  opacity: 1;
+  transform: scale(1.15);
+}
+
+/* ── MOBILE BREAKPOINTS ── */
+@media (max-width: 600px) {
+  .budget-top-bar {
+    padding: 8px 12px;
+    margin-bottom: 10px;
+  }
+
+  .budget-top-title {
+    font-size: 0.95rem;
+  }
+
+  .budget-top-sub {
+    font-size: 0.66rem;
+  }
+
+  .budget-add-btn {
+    padding: 6px 12px;
+    font-size: 0.8rem;
+  }
+
+  .budget-card {
+    padding: 14px;
+    margin-bottom: 10px;
+  }
+
+  .budget-card__header {
+    margin-bottom: 10px;
+  }
+
+  .budget-card__balance-value {
+    font-size: 1.85rem;
+  }
+
+  .budget-card__balance-sub {
+    font-size: 0.75rem;
+    margin-bottom: 12px;
+  }
+
+  .budget-progress-track {
+    margin-bottom: 12px;
+  }
+
+  .budget-alert {
+    padding: 12px;
+    margin-bottom: 10px;
+  }
+
+  .budget-alert__btn {
+    width: 100%;
+    margin-top: 4px;
+  }
+
+  .budget-history-card {
+    padding: 12px;
+    margin-bottom: 10px;
+  }
+
+  .budget-history-item {
+    padding: 8px 10px;
+  }
+}
+
+@media (max-width: 380px) {
+  .budget-top-bar {
+    padding: 7px 10px;
+  }
+
+  .budget-top-sub {
+    display: none;
+  }
+
+  .budget-card {
+    padding: 12px 10px;
+  }
+
+  .budget-card__balance-value {
+    font-size: 1.65rem;
+  }
+
+  .budget-stats-grid {
+    gap: 4px;
+    padding: 8px 4px;
+  }
+
+  .budget-stat-label {
+    font-size: 0.58rem;
+  }
+
+  .budget-stat-value {
+    font-size: 0.82rem;
+  }
+
+  .budget-history-item {
+    padding: 7px 8px;
+    gap: 6px;
+  }
+
+  .budget-history-amt {
+    font-size: 0.9rem;
+  }
+
+  .budget-history-spent-val {
+    font-size: 0.82rem;
+  }
+}
