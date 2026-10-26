@@ -677,13 +677,14 @@ h4 {
     display: none;
   }
 
-  .btn-primary,
-  .btn-add-habit {
-    width: 44px;
-    height: 44px;
+  .topnav .btn-primary,
+  .budget-top-bar .btn-primary {
+    width: 36px;
+    height: 36px;
     padding: 0;
     justify-content: center;
-    border-radius: var(--r-sm);
+    border-radius: var(--r-xs);
+    min-width: unset;
   }
 }
 

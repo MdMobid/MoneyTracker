@@ -619,7 +619,7 @@
           <p class="empty-state__text" style="max-width:300px;margin:0 auto 16px;font-size:0.82rem;">
             Add your budget amount. Daily expenses will count down from it and show your live remaining balance.
           </p>
-          <button class="btn-primary" onclick="window.__openBudgetModal()" style="background:var(--grad-money);box-shadow:0 4px 18px var(--green-dim);margin:0 auto;">
+          <button class="btn-primary budget-empty-btn" onclick="window.__openBudgetModal()" style="background:var(--grad-money);box-shadow:0 4px 18px var(--green-dim);margin:0 auto;">
             <span style="font-size:1.1rem;font-weight:300">＋</span><span> Add First Budget</span>
           </button>
         </div>

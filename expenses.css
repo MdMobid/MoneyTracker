@@ -671,9 +671,17 @@
     display: none;
   }
 
-  .btn-primary {
-    padding: 8px 12px;
-    min-width: auto;
+  .topnav .btn-primary,
+  .budget-top-bar .btn-primary,
+  .budget-add-btn {
+    width: 34px !important;
+    height: 34px !important;
+    padding: 0 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    min-width: unset !important;
+    border-radius: var(--r-xs) !important;
   }
 
   .btn-settings {
@@ -941,6 +949,21 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
+}
+
+.budget-empty-btn {
+  width: auto !important;
+  height: auto !important;
+  min-height: 42px !important;
+  padding: 10px 24px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  white-space: nowrap !important;
+  border-radius: var(--r-sm) !important;
+  font-size: 0.88rem !important;
+  font-family: 'Nunito', sans-serif !important;
 }
 
 /* ── ACTIVE BUDGET CARD ── */
